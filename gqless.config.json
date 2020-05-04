@@ -1,0 +1,4 @@
+{
+    "url": "https://hasura-db-1.herokuapp.com/v1/graphql",
+    "outputDir": "src/graphql"
+  }
