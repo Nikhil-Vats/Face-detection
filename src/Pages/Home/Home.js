@@ -2,118 +2,140 @@ import * as React from "react";
 import * as THREE from "three";
 import * as facemesh from '@tensorflow-models/facemesh';
 
-var scene, rWidth, rHeight, ellipse, camera, renderer;
-
-const main = async () => {
-    document.getElementById('video').play();
-    let video = document.getElementById('video');
-    let videoWidth = video.videoWidth;
-    let videoHeight = video.videoHeight;
-    video.width = videoWidth;
-    video.height = videoHeight;
-    renderPrediction();
-}
-
-const renderPrediction = async () => {
-    let video = document.getElementById('video');
-    let videoWidth = video.videoWidth;
-    let videoHeight = video.videoHeight;
-    const model = await facemesh.load();
-    const predictions = await model.estimateFaces(video);
-    if (predictions.length > 0) {
-        if(scene.children.length > 2) {
-            for(var i = scene.children.length-1; i > 1; i--) {
-                scene.remove(scene.children[i]);
-            }
-        }
-        for (let i = 0; i < predictions.length; i++) {
-            const keypoints = predictions[i].scaledMesh;
-            for (let i = 0; i < keypoints.length; i++) {
-                const x = keypoints[i][0];
-                const y = keypoints[i][1];
-                var curve = new THREE.EllipseCurve(
-                    x + rWidth/2 - videoWidth/2, y + rHeight/2 - videoHeight/2,            // ax, aY
-                    1, 1,           // xRadius, yRadius
-                    0, 2*Math.PI,  // aStartAngle, aEndAngle
-                    false,            // aClockwise
-                    0                 // aRotation
-                );
-                
-                var points = curve.getPoints( 50 );
-                var geometry = new THREE.BufferGeometry().setFromPoints( points );
-                
-                var material = new THREE.LineBasicMaterial( { linewidth: 10, color : 0x32EEDB } );
-                
-                ellipse = new THREE.Line( geometry, material );
-                ellipse.name = "ellipse"+i;
-                scene.add(ellipse);
-                setTimeout(() => {
-                    scene.remove(ellipse)
-                },2000);
-                geometry.translate(-rWidth/2,-rHeight/2,0);
-                geometry.scale(-1,-1,0)
-                geometry.rotateY(-Math.PI)
-            }
-        }
-    }
-    requestAnimationFrame(renderPrediction);
-}
-
-const getVideo = async () => {
-    const video = document.getElementById('video');
-    const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-            facingMode: 'user',
-        }
-    });
-    video.srcObject = stream;
-}
-
-const onLoaded = () => {
-    scene = new THREE.Scene();
-    camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
-    scene.add( camera );
-    renderer = new THREE.WebGLRenderer( { antialias: true } );
-    renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    rWidth = window.innerWidth;
-    rHeight = window.innerHeight;
-    let video = document.getElementById('video')
-    var texture = new THREE.VideoTexture( video );
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.format = THREE.RGBFormat;
-    document.getElementById('three').appendChild( renderer.domElement );
-    console.log(video.videoWidth, video.videoHeight);
-    var geometry = new THREE.PlaneGeometry(video.offsetWidth, video.offsetHeight);
-    document.getElementById('video').style.display = "none";
-    var material = new THREE.MeshBasicMaterial( { map: texture } );
-    var cube = new THREE.Mesh( geometry, material );
-    scene.add( cube );
-    window.addEventListener('resize', () => {
-        renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( window.innerWidth, window.innerHeight );
-        camera.updateProjectionMatrix();
-    })
-    camera.position.z = 5;
-    var animate = function () {
-        requestAnimationFrame( animate );
-        renderer.render( scene, camera );
-    };
-    animate();
-    main();
-}
-
 const Home = () => {
+    const camera = React.useRef(null),
+        video = React.useRef(null),
+        three = React.useRef(null),
+        scene = React.useRef(null),
+        texture = React.useRef(null),
+        renderer = React.useRef(null);
+
+    let ellipse;
+
+    const main = async () => {
+        video.current.play();
+        let videoWidth = video.current.videoWidth;
+        let videoHeight = video.current.videoHeight;
+        video.current.width = videoWidth;
+        video.current.height = videoHeight;
+        renderPrediction();
+    }
+
+    const getVideo = async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+                facingMode: 'user',
+            }
+        });
+        video.current.srcObject = stream;
+    }
+
+    const onLoaded = () => {
+        scene.current = new THREE.Scene();
+        camera.current = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
+        scene.current.add( camera.current );
+        renderer.current = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.current.setPixelRatio( window.devicePixelRatio );
+        renderer.current.setSize( window.innerWidth, window.innerHeight );
+        texture.current = new THREE.VideoTexture( video.current );
+        texture.current.minFilter = THREE.LinearFilter;
+        texture.current.magFilter = THREE.LinearFilter;
+        texture.current.format = THREE.RGBFormat;
+        three.current.appendChild( renderer.current.domElement );
+        let geometry = new THREE.PlaneGeometry(video.current.offsetWidth, video.current.offsetHeight);
+        video.current.style.display = "none";
+        let material = new THREE.MeshBasicMaterial( { map: texture.current } );
+        let cube = new THREE.Mesh( geometry, material );
+        scene.current.add( cube );
+        window.addEventListener('resize', () => {
+            renderer.current.setPixelRatio( window.devicePixelRatio );
+            renderer.current.setSize( window.innerWidth, window.innerHeight );
+            camera.current.updateProjectionMatrix();
+        })
+        camera.current.position.z = 5;
+        renderer.current.render( scene.current, camera.current );
+        main();
+    }
+
+    const renderPrediction = async () => {
+        let videoWidth = video.current.videoWidth;
+        let videoHeight = video.current.videoHeight;
+        const model = await facemesh.load();
+        const predictions = await model.estimateFaces(video.current);
+        if (predictions.length > 0) {
+            for (let i = 0; i < predictions.length; i++) {
+                const keypoints = predictions[i].scaledMesh;
+                const x = keypoints[0][0];
+                const y = keypoints[0][1];
+                let rWidth = window.innerWidth;
+                let rHeight = window.innerHeight;
+                if(ellipse) {
+                    let curve = new THREE.EllipseCurve(
+                        x + rWidth/2 - videoWidth/2, y + rHeight/2 - videoHeight/2,            // ax, aY
+                        1, 1,           // xRadius, yRadius
+                        0, 2*Math.PI,  // aStartAngle, aEndAngle
+                        false,            // aClockwise
+                        0                 // aRotation
+                    );
+                    let points = curve.getPoints( 50 );
+                    let geometry = new THREE.BufferGeometry().setFromPoints( points );
+                    geometry.translate(-rWidth/2,-rHeight/2,0);
+                    geometry.scale(-1,-1,0)
+                    geometry.rotateY(-Math.PI)
+                    ellipse.geometry = geometry;
+                } else if(ellipse == null) {
+                    let curve = new THREE.EllipseCurve(
+                        x + rWidth/2 - videoWidth/2, y + rHeight/2 - videoHeight/2,            // ax, aY
+                        1, 1,           // xRadius, yRadius
+                        0, 2*Math.PI,  // aStartAngle, aEndAngle
+                        false,            // aClockwise
+                        0                 // aRotation
+                    );
+                    let points = curve.getPoints( 50 );
+                    let geometry = new THREE.BufferGeometry().setFromPoints( points );
+                    
+                    let material = new THREE.LineBasicMaterial( { linewidth: 10, color : 0x32EEDB } );
+                    ellipse = new THREE.Line( geometry, material );
+                    geometry.translate(-rWidth/2,-rHeight/2,0);
+                    geometry.scale(-1,-1,0)
+                    geometry.rotateY(-Math.PI)
+                    scene.current.add(ellipse);
+                }
+            }
+        }
+        var animate = function () {
+            requestAnimationFrame(renderPrediction);
+            renderer.current.render( scene.current, camera.current );
+        };
+        animate();
+    }
+
     React.useEffect(() => {
         getVideo();
     });
+    React.useEffect(() => {
+        if(scene.current) {
+            scene.current.dispose();
+        }
+        if(texture.current) {
+            texture.current.dispose();
+        }
+        if(renderer.current) {
+            renderer.current.dispose();
+        }
+        if(camera.current) {
+            camera.current.dispose();
+        }
+        if(ellipse) {
+            ellipse.dispose();
+        }
+    }, []);
     return (
         <React.Fragment>
             <div>
-                <div id="three"></div>
-                <video onLoadedData={onLoaded} autoPlay id="video"></video>
+                <div ref={three}></div>
+                <video onLoadedData={onLoaded} autoPlay ref={video}></video>
             </div>
         </React.Fragment>
     )
