@@ -8,6 +8,7 @@ const Home = () => {
         three = React.useRef(null),
         scene = React.useRef(null),
         texture = React.useRef(null),
+        reqLoop = React.useRef(null),
         renderer = React.useRef(null);
 
     let ellipse;
@@ -105,7 +106,7 @@ const Home = () => {
             }
         }
         var animate = function () {
-            requestAnimationFrame(renderPrediction);
+            reqLoop.current = requestAnimationFrame(renderPrediction);
             renderer.current.render( scene.current, camera.current );
         };
         animate();
@@ -115,22 +116,27 @@ const Home = () => {
         getVideo();
     });
     React.useEffect(() => {
-        if(scene.current) {
-            scene.current.dispose();
+        return () => {
+            if(scene.current) {
+                scene.current.dispose();
+            }
+            if(texture.current) {
+                texture.current.dispose();
+            }
+            if(renderer.current) {
+                renderer.current.dispose();
+            }
+            if(camera.current) {
+                camera.current.dispose();
+            }
+            if(ellipse) {
+                ellipse.dispose();
+            }
+            if(reqLoop.current) {
+                cancelAnimationFrame(reqLoop.current);
+            }
         }
-        if(texture.current) {
-            texture.current.dispose();
-        }
-        if(renderer.current) {
-            renderer.current.dispose();
-        }
-        if(camera.current) {
-            camera.current.dispose();
-        }
-        if(ellipse) {
-            ellipse.dispose();
-        }
-    }, []);
+    });
     return (
         <React.Fragment>
             <div>
