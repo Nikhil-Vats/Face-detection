@@ -9,6 +9,7 @@ const Home = () => {
         scene = React.useRef(null),
         texture = React.useRef(null),
         reqLoop = React.useRef(null),
+        box = React.useRef(null),
         renderer = React.useRef(null);
 
     let ellipse;
@@ -54,6 +55,10 @@ const Home = () => {
             renderer.current.setSize( window.innerWidth, window.innerHeight );
             camera.current.updateProjectionMatrix();
         })
+        let boxGeometry = new THREE.BoxGeometry(10,10);
+        let boxMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+        box.current = new THREE.Mesh( boxGeometry, boxMaterial );
+        scene.current.add( box.current );
         camera.current.position.z = 5;
         renderer.current.render( scene.current, camera.current );
         main();
@@ -69,40 +74,7 @@ const Home = () => {
                 const keypoints = predictions[i].scaledMesh;
                 const x = keypoints[0][0];
                 const y = keypoints[0][1];
-                let rWidth = window.innerWidth;
-                let rHeight = window.innerHeight;
-                if(ellipse) {
-                    let curve = new THREE.EllipseCurve(
-                        x + rWidth/2 - videoWidth/2, y + rHeight/2 - videoHeight/2,            // ax, aY
-                        1, 1,           // xRadius, yRadius
-                        0, 2*Math.PI,  // aStartAngle, aEndAngle
-                        false,            // aClockwise
-                        0                 // aRotation
-                    );
-                    let points = curve.getPoints( 50 );
-                    let geometry = new THREE.BufferGeometry().setFromPoints( points );
-                    geometry.translate(-rWidth/2,-rHeight/2,0);
-                    geometry.scale(-1,-1,0)
-                    geometry.rotateY(-Math.PI)
-                    ellipse.geometry = geometry;
-                } else if(ellipse == null) {
-                    let curve = new THREE.EllipseCurve(
-                        x + rWidth/2 - videoWidth/2, y + rHeight/2 - videoHeight/2,            // ax, aY
-                        1, 1,           // xRadius, yRadius
-                        0, 2*Math.PI,  // aStartAngle, aEndAngle
-                        false,            // aClockwise
-                        0                 // aRotation
-                    );
-                    let points = curve.getPoints( 50 );
-                    let geometry = new THREE.BufferGeometry().setFromPoints( points );
-                    
-                    let material = new THREE.LineBasicMaterial( { linewidth: 10, color : 0x32EEDB } );
-                    ellipse = new THREE.Line( geometry, material );
-                    geometry.translate(-rWidth/2,-rHeight/2,0);
-                    geometry.scale(-1,-1,0)
-                    geometry.rotateY(-Math.PI)
-                    scene.current.add(ellipse);
-                }
+                box.current.position.set( x - videoWidth/2, - y + videoHeight/2,0);
             }
         }
         var animate = function () {
