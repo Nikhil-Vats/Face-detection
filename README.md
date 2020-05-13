@@ -1,6 +1,6 @@
 ## About
 
-Face detection demo - https://facemesh-detection.netlify.app/
+Face detection demo (takes ~10s to load libraries and detect face) - https://facemesh-detection.netlify.app/
 
 Subscriptions demo - https://facemesh-detection.netlify.app/data
 
